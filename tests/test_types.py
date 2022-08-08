@@ -185,11 +185,12 @@ def test_constrained_list_default():
 
 
 def test_constrained_list_too_long():
+
     class ConListModelMax(BaseModel):
         v: conlist(int, max_items=10) = []
 
     with pytest.raises(ValidationError) as exc_info:
-        ConListModelMax(v=list(str(i) for i in range(11)))
+        ConListModelMax(v=[str(i) for i in range(11)])
     assert exc_info.value.errors() == [
         {
             'loc': ('v',),
@@ -1244,15 +1245,7 @@ def test_tuple_variable_len_fails(value, cls, exc):
     assert exc_info.value.errors() == exc
 
 
-@pytest.mark.parametrize(
-    'value,result',
-    (
-        ({1, 2, 2, '3'}, {1, 2, '3'}),
-        ((1, 2, 2, '3'), {1, 2, '3'}),
-        ([1, 2, 2, '3'], {1, 2, '3'}),
-        ({i**2 for i in range(5)}, {0, 1, 4, 9, 16}),
-    ),
-)
+@pytest.mark.parametrize('value,result', (({1, 2, '3'}, {1, 2, '3'}), ((1, 2, 2, '3'), {1, 2, '3'}), ([1, 2, 2, '3'], {1, 2, '3'}), ({i**2 for i in range(5)}, {0, 1, 4, 9, 16})))
 def test_set_success(value, result):
     class Model(BaseModel):
         v: set
@@ -1306,14 +1299,7 @@ def test_sequence_success(cls, value, result):
     assert Model(v=value).v == result
 
 
-@pytest.mark.parametrize(
-    'cls, value,result',
-    (
-        (int, (i for i in range(3)), iter([0, 1, 2])),
-        (float, (float(i) for i in range(3)), iter([0.0, 1.0, 2.0])),
-        (str, (str(i) for i in range(3)), iter(['0', '1', '2'])),
-    ),
-)
+@pytest.mark.parametrize('cls, value,result', ((int, iter(range(3)), iter([0, 1, 2])), (float, (float(i) for i in range(3)), iter([0.0, 1.0, 2.0])), (str, (str(i) for i in range(3)), iter(['0', '1', '2']))))
 def test_sequence_generator_success(cls, value, result):
     class Model(BaseModel):
         v: Sequence[cls]
@@ -1399,29 +1385,15 @@ def test_infinite_iterable_validate_first():
     ]
 
 
-@pytest.mark.parametrize(
-    'cls,value,errors',
-    (
-        (
-            int,
-            (i for i in ['a', 'b', 'c']),
-            [
+@pytest.mark.parametrize('cls,value,errors', ((int, iter(['a', 'b', 'c']), [
                 {'loc': ('v', 0), 'msg': 'value is not a valid integer', 'type': 'type_error.integer'},
                 {'loc': ('v', 1), 'msg': 'value is not a valid integer', 'type': 'type_error.integer'},
                 {'loc': ('v', 2), 'msg': 'value is not a valid integer', 'type': 'type_error.integer'},
-            ],
-        ),
-        (
-            float,
-            (i for i in ['a', 'b', 'c']),
-            [
+            ]), (float, iter(['a', 'b', 'c']), [
                 {'loc': ('v', 0), 'msg': 'value is not a valid float', 'type': 'type_error.float'},
                 {'loc': ('v', 1), 'msg': 'value is not a valid float', 'type': 'type_error.float'},
                 {'loc': ('v', 2), 'msg': 'value is not a valid float', 'type': 'type_error.float'},
-            ],
-        ),
-    ),
-)
+            ])))
 def test_sequence_generator_fails(cls, value, errors):
     class Model(BaseModel):
         v: Sequence[cls]
@@ -2488,6 +2460,7 @@ def test_pattern_error():
 
 
 def test_secretstr():
+
     class Foobar(BaseModel):
         password: SecretStr
         empty_password: SecretStr
@@ -2501,7 +2474,7 @@ def test_secretstr():
 
     # Assert str and repr are correct.
     assert str(f.password) == '**********'
-    assert str(f.empty_password) == ''
+    assert not str(f.empty_password)
     assert repr(f.password) == "SecretStr('**********')"
     assert repr(f.empty_password) == "SecretStr('')"
 
@@ -2577,6 +2550,7 @@ def test_secretstr_min_max_length():
 
 
 def test_secretbytes():
+
     class Foobar(BaseModel):
         password: SecretBytes
         empty_password: SecretBytes
@@ -2590,7 +2564,7 @@ def test_secretbytes():
 
     # Assert str and repr are correct.
     assert str(f.password) == '**********'
-    assert str(f.empty_password) == ''
+    assert not str(f.empty_password)
     assert repr(f.password) == "SecretBytes(b'**********')"
     assert repr(f.empty_password) == "SecretBytes(b'')"
 
@@ -2855,19 +2829,7 @@ def test_deque_success():
     assert Model(v=[1, 2, 3]).v == deque([1, 2, 3])
 
 
-@pytest.mark.parametrize(
-    'cls,value,result',
-    (
-        (int, [1, 2, 3], deque([1, 2, 3])),
-        (int, (1, 2, 3), deque((1, 2, 3))),
-        (int, deque((1, 2, 3)), deque((1, 2, 3))),
-        (float, {1.0, 2.0, 3.0}, deque({1.0, 2.0, 3.0})),
-        (Set[int], [{1, 2}, {3, 4}, {5, 6}], deque([{1, 2}, {3, 4}, {5, 6}])),
-        (Tuple[int, str], ((1, 'a'), (2, 'b'), (3, 'c')), deque(((1, 'a'), (2, 'b'), (3, 'c')))),
-        (str, [w for w in 'one two three'.split()], deque(['one', 'two', 'three'])),
-        (int, frozenset([1, 2, 3]), deque([1, 2, 3])),
-    ),
-)
+@pytest.mark.parametrize('cls,value,result', ((int, [1, 2, 3], deque([1, 2, 3])), (int, (1, 2, 3), deque((1, 2, 3))), (int, deque((1, 2, 3)), deque((1, 2, 3))), (float, {1.0, 2.0, 3.0}, deque({1.0, 2.0, 3.0})), (Set[int], [{1, 2}, {3, 4}, {5, 6}], deque([{1, 2}, {3, 4}, {5, 6}])), (Tuple[int, str], ((1, 'a'), (2, 'b'), (3, 'c')), deque(((1, 'a'), (2, 'b'), (3, 'c')))), (str, list('one two three'.split()), deque(['one', 'two', 'three'])), (int, frozenset([1, 2, 3]), deque([1, 2, 3]))))
 def test_deque_generic_success(cls, value, result):
     class Model(BaseModel):
         v: Deque[cls]
@@ -3142,16 +3104,7 @@ def test_past_date_validation_success(value, result):
     assert Model(foo=value).foo == result
 
 
-@pytest.mark.parametrize(
-    'value',
-    (
-        date.today(),
-        date.today() + timedelta(1),
-        datetime.today(),
-        datetime.today() + timedelta(1),
-        '2064-06-01',
-    ),
-)
+@pytest.mark.parametrize('value', (date.today(), date.today() + timedelta(1), datetime.now(), datetime.now() + timedelta(1), '2064-06-01'))
 def test_past_date_validation_fails(value):
     class Model(BaseModel):
         foo: PastDate
@@ -3167,14 +3120,7 @@ def test_past_date_validation_fails(value):
     ]
 
 
-@pytest.mark.parametrize(
-    'value,result',
-    (
-        (date.today() + timedelta(1), date.today() + timedelta(1)),
-        (datetime.today() + timedelta(1), date.today() + timedelta(1)),
-        ('2064-06-01', date(2064, 6, 1)),
-    ),
-)
+@pytest.mark.parametrize('value,result', ((date.today() + timedelta(1), date.today() + timedelta(1)), (datetime.now() + timedelta(1), date.today() + timedelta(1)), ('2064-06-01', date(2064, 6, 1))))
 def test_future_date_validation_success(value, result):
     class Model(BaseModel):
         foo: FutureDate
@@ -3182,16 +3128,7 @@ def test_future_date_validation_success(value, result):
     assert Model(foo=value).foo == result
 
 
-@pytest.mark.parametrize(
-    'value',
-    (
-        date.today(),
-        date.today() - timedelta(1),
-        datetime.today(),
-        datetime.today() - timedelta(1),
-        '1996-01-22',
-    ),
-)
+@pytest.mark.parametrize('value', (date.today(), date.today() - timedelta(1), datetime.now(), datetime.now() - timedelta(1), '1996-01-22'))
 def test_future_date_validation_fails(value):
     class Model(BaseModel):
         foo: FutureDate

@@ -159,10 +159,7 @@ def dataclass(
         dc_cls.__pydantic_model__.__try_update_forward_refs__(**{cls.__name__: cls})
         return dc_cls
 
-    if _cls is None:
-        return wrap
-
-    return wrap(_cls)
+    return wrap if _cls is None else wrap(_cls)
 
 
 @contextmanager
@@ -353,8 +350,7 @@ def _dataclass_validate_assignment_setattr(self: 'Dataclass', name: str, value: 
     if self.__pydantic_initialised__:
         d = dict(self.__dict__)
         d.pop(name, None)
-        known_field = self.__pydantic_model__.__fields__.get(name, None)
-        if known_field:
+        if known_field := self.__pydantic_model__.__fields__.get(name, None):
             value, error_ = known_field.validate(value, d, loc=name, cls=self.__class__)
             if error_:
                 raise ValidationError([error_], self.__class__)

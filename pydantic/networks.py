@@ -236,22 +236,22 @@ class AnyUrl(str):
             **_kwargs,  # type: ignore[misc]
         )
 
-        url = scheme + '://'
+        url = f'{scheme}://'
         if user:
             url += user
         if password:
-            url += ':' + password
+            url += f':{password}'
         if user or password:
             url += '@'
         url += host
         if port and ('port' not in cls.hidden_parts or cls.get_default_parts(parts).get('port') != port):
-            url += ':' + port
+            url += f':{port}'
         if path:
             url += path
         if query:
-            url += '?' + query
+            url += f'?{query}'
         if fragment:
-            url += '#' + fragment
+            url += f'#{fragment}'
         return url
 
     @classmethod
@@ -455,7 +455,7 @@ class MultiHostDsn(AnyUrl):
 
         if len(hosts_parts) > 1:
             return cls(
-                None if any([hp['rebuild'] for hp in hosts_parts]) else url,
+                None if any(hp['rebuild'] for hp in hosts_parts) else url,
                 scheme=parts['scheme'],
                 user=parts['user'],
                 password=parts['password'],
@@ -465,22 +465,22 @@ class MultiHostDsn(AnyUrl):
                 host_type=None,
                 hosts=hosts_parts,
             )
-        else:
-            # backwards compatibility with single host
-            host_part = hosts_parts[0]
-            return cls(
-                None if host_part['rebuild'] else url,
-                scheme=parts['scheme'],
-                user=parts['user'],
-                password=parts['password'],
-                host=host_part['host'],
-                tld=host_part['tld'],
-                host_type=host_part['host_type'],
-                port=host_part.get('port'),
-                path=parts['path'],
-                query=parts['query'],
-                fragment=parts['fragment'],
-            )
+
+        # backwards compatibility with single host
+        host_part = hosts_parts[0]
+        return cls(
+            None if host_part['rebuild'] else url,
+            scheme=parts['scheme'],
+            user=parts['user'],
+            password=parts['password'],
+            host=host_part['host'],
+            tld=host_part['tld'],
+            host_type=host_part['host_type'],
+            port=host_part.get('port'),
+            path=parts['path'],
+            query=parts['query'],
+            fragment=parts['fragment'],
+        )
 
 
 class PostgresDsn(MultiHostDsn):
@@ -512,7 +512,7 @@ class RedisDsn(AnyUrl):
     @staticmethod
     def get_default_parts(parts: 'Parts') -> 'Parts':
         return {
-            'domain': 'localhost' if not (parts['ipv4'] or parts['ipv6']) else '',
+            'domain': '' if (parts['ipv4'] or parts['ipv6']) else 'localhost',
             'port': '6379',
             'path': '/0',
         }

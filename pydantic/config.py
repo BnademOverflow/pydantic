@@ -147,19 +147,18 @@ def get_config(config: Union[ConfigDict, Type[BaseConfig], None]) -> Type[BaseCo
     if config is None:
         return BaseConfig
 
-    else:
-        config_dict = (
-            config
-            if isinstance(config, dict)
-            else {k: getattr(config, k) for k in dir(config) if not k.startswith('__')}
-        )
+    config_dict = (
+        config
+        if isinstance(config, dict)
+        else {k: getattr(config, k) for k in dir(config) if not k.startswith('__')}
+    )
 
-        class Config(BaseConfig):
-            ...
+    class Config(BaseConfig):
+        ...
 
-        for k, v in config_dict.items():
-            setattr(Config, k, v)
-        return Config
+    for k, v in config_dict.items():
+        setattr(Config, k, v)
+    return Config
 
 
 def inherit_config(self_config: 'ConfigType', parent_config: 'ConfigType', **namespace: Any) -> 'ConfigType':
